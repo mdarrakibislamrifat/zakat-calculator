@@ -1,17 +1,23 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Coins, Wallet, Landmark, Info, ArrowRight, Download, Calculator, TrendingUp } from "lucide-react";
+import { Coins, Wallet, Landmark, Info, ArrowRight, Download, Calculator, TrendingUp, ChevronDown, Repeat } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import jsPDF from "jspdf";
 
 export default function ZakatCalculator() {
+  // --- States ---
   const [rates, setRates] = useState({ gold: 9500, silver: 125 });
   const [cash, setCash] = useState<number>(0);
   const [goldWeight, setGoldWeight] = useState<number>(0);
   const [silverWeight, setSilverWeight] = useState<number>(0);
   const [debts, setDebts] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Custom Settings (Carat & Units)
+  const [goldCarat, setGoldCarat] = useState<number>(22);
+  const [silverUnit, setSilverUnit] = useState<"gram" | "vori">("gram");
 
+  // --- Real-time Price Fetching ---
   useEffect(() => {
     const fetchLivePrices = async () => {
       try {
@@ -35,158 +41,174 @@ export default function ZakatCalculator() {
     fetchLivePrices();
   }, []);
 
-  const totalAssets = cash + (goldWeight * rates.gold) + (silverWeight * rates.silver);
+  // --- Calculations ---
+  // ১ ভরি = ১১.৬৬ গ্রাম
+  const VORI_TO_GRAM = 11.66;
+  
+  // Gold Adjustment
+  const adjustedGoldPrice = (rates.gold / 24) * goldCarat;
+  const totalGoldValue = goldWeight * adjustedGoldPrice;
+
+  // Silver Adjustment
+  const actualSilverWeightGrams = silverUnit === "vori" ? silverWeight * VORI_TO_GRAM : silverWeight;
+  const totalSilverValue = actualSilverWeightGrams * rates.silver;
+
+  const totalAssets = cash + totalGoldValue + totalSilverValue;
   const netWealth = totalAssets - debts;
+  
+  // Nisab based on 52.5 Tola (612.36g) Silver
   const nisabThreshold = rates.silver * 612.36; 
   const isZakatEligible = netWealth >= nisabThreshold;
   const zakatAmount = isZakatEligible ? netWealth * 0.025 : 0;
 
+  // --- PDF Export ---
   const handleDownload = () => {
     const doc = new jsPDF();
     doc.setFontSize(22);
-    doc.text("Zakat Summary - ZAKAT.LY", 20, 20);
+    doc.text("Pabitra - Zakat Summary", 20, 20);
+    doc.setFontSize(12);
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 30);
+    doc.line(20, 35, 190, 35);
+    
+    doc.text(`Cash & Savings: BDT ${cash.toLocaleString()}`, 20, 50);
+    doc.text(`Gold: ${goldWeight}g (${goldCarat}K) - Value: BDT ${totalGoldValue.toFixed(0)}`, 20, 60);
+    doc.text(`Silver: ${silverWeight}${silverUnit} - Value: BDT ${totalSilverValue.toFixed(0)}`, 20, 70);
+    doc.text(`Total Liabilities: BDT ${debts.toLocaleString()}`, 20, 80);
+    
     doc.setFontSize(14);
-    doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 35);
-    doc.text(`Cash & Savings: BDT ${cash}`, 20, 55);
-    doc.text(`Gold (Grams): ${goldWeight}g`, 20, 65);
-    doc.text(`Silver (Grams): ${silverWeight}g`, 20, 75);
-    doc.text(`Debts: BDT ${debts}`, 20, 85);
     doc.setTextColor(16, 78, 59);
-    doc.text(`Total Zakat Payable: BDT ${zakatAmount.toFixed(2)}`, 20, 105);
-    doc.save("Zakat_Summary.pdf");
+    doc.text(`Net Wealth: BDT ${netWealth.toLocaleString()}`, 20, 100);
+    doc.text(`Total Zakat Payable (2.5%): BDT ${zakatAmount.toLocaleString()}`, 20, 110);
+    
+    doc.save("Pabitra_Zakat_Summary.pdf");
   };
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-sans text-slate-900 pb-20 selection:bg-emerald-100">
       
-      {/* --- Enhanced Navbar --- */}
-      <nav className="max-w-7xl mx-auto p-4 md:p-6 flex justify-between items-center bg-white/70 backdrop-blur-xl sticky top-0 z-50 border-b border-slate-200/50">
+      {/* Navbar */}
+      <nav className="max-w-7xl mx-auto p-4 md:p-6 flex justify-between items-center bg-white/80 backdrop-blur-xl sticky top-0 z-50 border-b border-slate-200">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-tr from-emerald-600 to-emerald-400 rounded-xl shadow-lg shadow-emerald-200 flex items-center justify-center">
-            <Calculator className="text-white" size={20} />
+          <div className="w-10 h-10 bg-gradient-to-tr from-emerald-600 to-emerald-400 rounded-xl shadow-lg flex items-center justify-center text-white">
+            <Calculator size={20} />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-slate-900">Zakat<span className="text-emerald-600">.ly</span></h1>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Precision Calculator</p>
+            <h1 className="text-xl font-bold tracking-tight">Pabitra<span className="text-emerald-600">.ly</span></h1>
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Islamic Finance Tool</p>
           </div>
         </div>
         
         <div className="hidden md:flex gap-4">
-            <div className="bg-white border border-slate-200 px-4 py-2 rounded-2xl flex items-center gap-3 shadow-sm">
-                <div className="flex flex-col">
-                    <span className="text-[9px] uppercase font-bold text-slate-400">Live Gold (24K)</span>
-                    <span className="text-sm font-bold text-slate-700">৳{rates.gold.toLocaleString()}</span>
-                </div>
-                <TrendingUp size={16} className="text-emerald-500" />
+            <div className="bg-white border border-slate-200 px-4 py-2 rounded-2xl flex items-center gap-2 shadow-sm">
+                <span className="text-[10px] font-bold text-slate-400">GOLD 24K</span>
+                <span className="text-sm font-bold text-slate-700">৳{rates.gold.toLocaleString()}</span>
+                <TrendingUp size={14} className="text-emerald-500" />
             </div>
-            <div className="bg-white border border-slate-200 px-4 py-2 rounded-2xl flex items-center gap-3 shadow-sm">
-                <div className="flex flex-col">
-                    <span className="text-[9px] uppercase font-bold text-slate-400">Live Silver</span>
-                    <span className="text-sm font-bold text-slate-700">৳{rates.silver.toLocaleString()}</span>
-                </div>
-                <TrendingUp size={16} className="text-emerald-500" />
+            <div className="bg-white border border-slate-200 px-4 py-2 rounded-2xl flex items-center gap-2 shadow-sm">
+                <span className="text-[10px] font-bold text-slate-400">SILVER</span>
+                <span className="text-sm font-bold text-slate-700">৳{rates.silver.toLocaleString()}</span>
+                <TrendingUp size={14} className="text-emerald-500" />
             </div>
         </div>
       </nav>
 
-      <main className="max-w-6xl mx-auto px-6 mt-16 grid lg:grid-cols-12 gap-16">
+      <main className="max-w-6xl mx-auto px-6 mt-12 grid lg:grid-cols-12 gap-12">
         
-        {/* --- Left Side: Inputs --- */}
+        {/* Left Side: Inputs */}
         <div className="lg:col-span-7">
-          <header className="mb-12">
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                <span className="bg-emerald-100 text-emerald-700 text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">Islamic Finance</span>
-                <h2 className="text-5xl font-extrabold text-slate-900 mt-4 leading-[1.1]">
-                  Fulfill your <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500">Obligation</span> with confidence.
-                </h2>
-                <p className="text-slate-500 mt-6 text-lg max-w-md leading-relaxed">
-                  Automatically adjusted with real-time market rates for gold and silver.
-                </p>
-            </motion.div>
+          <header className="mb-10">
+            <motion.h2 initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-4xl font-extrabold text-slate-900 leading-tight">
+              আপনার জাকাতের সঠিক <br/><span className="text-emerald-600 italic">হিসাব করুন।</span>
+            </motion.h2>
           </header>
 
           <div className="grid sm:grid-cols-2 gap-5">
-            {[
-              { label: "Cash & Savings", icon: <Wallet size={22}/>, setter: setCash, color: "emerald", placeholder: "0.00" },
-              { label: "Gold (Grams)", icon: <Coins size={22}/>, setter: setGoldWeight, color: "amber", placeholder: "0g" },
-              { label: "Silver (Grams)", icon: <Landmark size={22}/>, setter: setSilverWeight, color: "slate", placeholder: "0g" },
-              { label: "Debts & Liabilities", icon: <ArrowRight size={22}/>, setter: setDebts, color: "rose", placeholder: "0.00" },
-            ].map((item, idx) => (
-              <div key={idx} className="bg-white p-6 rounded-[1.5rem] border border-slate-200 shadow-sm transition-all focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500">
-                <div className={`bg-${item.color}-50 text-${item.color}-600 w-10 h-10 rounded-xl flex items-center justify-center mb-4`}>
-                  {item.icon}
-                </div>
-                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{item.label}</label>
-                <input 
-                  type="number" 
-                  onChange={(e) => item.setter(Math.max(0, Number(e.target.value)))}
-                  className="w-full text-2xl font-bold outline-none mt-1 bg-transparent placeholder:text-slate-200 text-slate-700" 
-                  placeholder={item.placeholder}
-                />
+            {/* Cash */}
+            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm focus-within:ring-2 ring-emerald-500/20 transition-all">
+              <div className="bg-emerald-50 text-emerald-600 w-10 h-10 rounded-xl flex items-center justify-center mb-4"><Wallet size={20}/></div>
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">নগদ টাকা ও সঞ্চয় (BDT)</label>
+              <input type="number" onChange={(e) => setCash(Math.max(0, Number(e.target.value)))} className="w-full text-2xl font-bold outline-none mt-1" placeholder="0.00" />
+            </div>
+
+            {/* Gold */}
+            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm focus-within:ring-2 ring-amber-500/20 transition-all">
+              <div className="flex justify-between items-center mb-4">
+                <div className="bg-amber-50 text-amber-600 w-10 h-10 rounded-xl flex items-center justify-center"><Coins size={20}/></div>
+                <select value={goldCarat} onChange={(e) => setGoldCarat(Number(e.target.value))} className="bg-slate-100 text-[10px] font-bold px-2 py-1 rounded-lg outline-none cursor-pointer">
+                  <option value={24}>24K Pure</option>
+                  <option value={22}>22K Standard</option>
+                  <option value={21}>21K Jewelry</option>
+                  <option value={18}>18K</option>
+                </select>
               </div>
-            ))}
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">স্বর্ণের পরিমাণ (Grams)</label>
+              <input type="number" onChange={(e) => setGoldWeight(Math.max(0, Number(e.target.value)))} className="w-full text-2xl font-bold outline-none mt-1" placeholder="0g" />
+              <p className="text-[9px] text-amber-600 font-bold mt-2 uppercase tracking-tighter">Adjusted Rate: ৳{adjustedGoldPrice.toFixed(0)}/g</p>
+            </div>
+
+            {/* Silver */}
+            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm focus-within:ring-2 ring-slate-500/20 transition-all">
+              <div className="flex justify-between items-center mb-4">
+                <div className="bg-slate-50 text-slate-600 w-10 h-10 rounded-xl flex items-center justify-center"><Landmark size={20}/></div>
+                <button 
+                  onClick={() => setSilverUnit(silverUnit === "gram" ? "vori" : "gram")}
+                  className="bg-slate-100 text-[10px] font-bold px-3 py-1 rounded-lg flex items-center gap-1 hover:bg-slate-200 transition-colors"
+                >
+                  <Repeat size={10} /> UNIT: {silverUnit.toUpperCase()}
+                </button>
+              </div>
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">রুপার পরিমাণ ({silverUnit})</label>
+              <input type="number" onChange={(e) => setSilverWeight(Math.max(0, Number(e.target.value)))} className="w-full text-2xl font-bold outline-none mt-1" placeholder={`0 ${silverUnit}`} />
+            </div>
+
+            {/* Debts */}
+            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm focus-within:ring-2 ring-rose-500/20 transition-all">
+              <div className="bg-rose-50 text-rose-600 w-10 h-10 rounded-xl flex items-center justify-center mb-4"><ArrowRight size={20} className="rotate-45"/></div>
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest text-rose-400">ঋণ ও দায়-দেনা (-)</label>
+              <input type="number" onChange={(e) => setDebts(Math.max(0, Number(e.target.value)))} className="w-full text-2xl font-bold outline-none mt-1 text-rose-700" placeholder="0.00" />
+            </div>
           </div>
         </div>
 
-        {/* --- Right Side: Dashboard Summary --- */}
+        {/* Right Side: Summary Card */}
         <div className="lg:col-span-5">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-slate-900 text-white p-8 rounded-[2.5rem] shadow-2xl shadow-slate-300 sticky top-28 border border-slate-800"
-          >
-            <div className="flex justify-between items-center mb-10">
-               <div className="flex flex-col">
-                  <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">Calculated Payable</span>
-                  <p className="text-emerald-400 text-[10px] font-medium mt-1 italic">● 2.5% of net wealth</p>
+          <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-slate-900 text-white p-8 rounded-[2.5rem] shadow-2xl sticky top-28 border border-slate-800">
+            <div className="flex justify-between items-start mb-8">
+               <div>
+                  <span className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">Total Zakat Payable</span>
+                  <div className="flex items-baseline gap-2 mt-2">
+                    <span className="text-3xl font-light text-slate-600">৳</span>
+                    <motion.span key={zakatAmount} initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="text-6xl font-bold tracking-tighter">
+                      {zakatAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                    </motion.span>
+                  </div>
                </div>
-               <div className="h-12 w-12 rounded-full border border-slate-700 flex items-center justify-center">
-                  <Info size={18} className="text-slate-500" />
-               </div>
-            </div>
-            
-            <div className="mb-10">
-              <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-light text-slate-500">৳</span>
-                <motion.span 
-                  key={zakatAmount}
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                  className="text-7xl font-bold tracking-tight"
-                >
-                  {zakatAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                </motion.span>
-              </div>
+               <Info size={20} className="text-slate-700" />
             </div>
 
-            <div className="space-y-4 pt-8 border-t border-slate-800">
-               <div className="flex justify-between items-center p-4 bg-slate-800/40 rounded-2xl">
-                  <span className="text-slate-400 text-sm italic font-medium text-xs">Threshold (Nisab)</span>
+            <div className="space-y-3 pt-6 border-t border-slate-800">
+               <div className="flex justify-between items-center bg-slate-800/50 p-4 rounded-2xl">
+                  <span className="text-slate-400 text-xs italic">Nisab Threshold (52.5 Tola)</span>
                   <span className="font-bold text-slate-200 text-sm">৳{nisabThreshold.toLocaleString()}</span>
                </div>
-               
-               <div className="flex justify-between items-center p-4 bg-slate-800/40 rounded-2xl">
-                  <span className="text-slate-400 text-sm italic font-medium text-xs">Eligibility Status</span>
-                  <AnimatePresence mode="wait">
-                    <motion.span 
-                      key={isZakatEligible ? "e" : "ne"}
-                      initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-                      className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${isZakatEligible ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'}`}
-                    >
-                      {isZakatEligible ? "Eligible" : "Not Eligible"}
-                    </motion.span>
-                  </AnimatePresence>
+               <div className="flex justify-between items-center bg-slate-800/50 p-4 rounded-2xl">
+                  <span className="text-slate-400 text-xs italic">Net Wealth</span>
+                  <span className="font-bold text-emerald-400 text-sm">৳{netWealth.toLocaleString()}</span>
                </div>
             </div>
 
-            <button 
-                onClick={handleDownload} 
-                className="w-full mt-8 bg-emerald-500 hover:bg-emerald-400 active:scale-[0.98] text-white font-bold py-5 rounded-2xl transition-all flex items-center justify-center gap-3 shadow-lg shadow-emerald-500/20"
-            >
+            <div className={`mt-6 p-4 rounded-2xl text-center border ${isZakatEligible ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-400'}`}>
+               <span className="text-[10px] font-black uppercase tracking-widest">
+                {isZakatEligible ? "● You are eligible for Zakat" : "● Below Nisab Threshold"}
+               </span>
+            </div>
+
+            <button onClick={handleDownload} className="w-full mt-8 bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-5 rounded-2xl transition-all flex items-center justify-center gap-3 shadow-xl shadow-emerald-950/20 active:scale-95">
               <Download size={18} /> DOWNLOAD SUMMARY
             </button>
             
-            <p className="text-[10px] text-center mt-6 text-slate-500 font-medium tracking-tight">
-                Privacy Guaranteed. We do not store your financial data.
+            <p className="text-[9px] text-center mt-6 text-slate-600 font-medium uppercase tracking-tighter">
+              Zakat is 2.5% of your total net wealth after one lunar year.
             </p>
           </motion.div>
         </div>
