@@ -166,7 +166,32 @@ export default function ZakatCalculator() {
 
         <div className="lg:col-span-5">
           <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-slate-900 text-white p-8 rounded-[2.5rem] shadow-2xl sticky top-28 border border-slate-800">
-            <span className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">Payable Zakat</span>
+          <div className="flex justify-between items-start mb-8">
+  <div>
+    <span className="text-slate-500 text-[10px] font-black uppercase ">Payable Zakat</span>
+    <p className="text-emerald-400 text-[10px] font-medium mt-1 ">● 2.5% of net wealth</p>
+  </div>
+  
+  {/* Modern Tooltip Implementation */}
+  <div className="relative group">
+    <div className="h-10 w-10 rounded-full border border-slate-800 flex items-center justify-center hover:bg-slate-800 transition-all cursor-help">
+      <Info size={18} className="text-slate-500 group-hover:text-emerald-400" />
+    </div>
+    
+    {/* Tooltip Card */}
+    <div className="absolute right-0 top-12 w-64 p-4 bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 transform translate-y-2 group-hover:translate-y-0">
+      <div className="relative">
+        {/* Little Arrow for Tooltip */}
+        <div className="absolute -top-6 right-3 border-8 border-transparent border-b-slate-800"></div>
+        
+        <h4 className="text-emerald-400 font-bold text-[10px] uppercase mb-1">Quick Note</h4>
+        <p className="text-[11px] leading-relaxed text-slate-300">
+          Zakat becomes obligatory if your wealth remains above the <span className="text-white font-medium">Nisab threshold</span> for one full lunar year (Hawl).
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
             <div className="flex items-baseline gap-2 mt-2 mb-10">
                 <span className="text-3xl font-light text-slate-600">৳</span>
                 <motion.span key={zakatAmount} initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="text-7xl font-bold tracking-tighter">
@@ -176,11 +201,11 @@ export default function ZakatCalculator() {
 
             <div className="space-y-3 pt-6 border-t border-slate-800">
                <div className="flex justify-between items-center bg-slate-800/50 p-4 rounded-2xl">
-                  <span className="text-slate-400 text-xs italic">Nisab Threshold</span>
+                  <span className="text-slate-400 ">Nisab Threshold</span>
                   <span className="font-bold text-slate-200 text-sm">৳{nisabThreshold.toLocaleString()}</span>
                </div>
                <div className="flex justify-between items-center bg-slate-800/50 p-4 rounded-2xl">
-                  <span className="text-slate-400 text-xs italic">Net Wealth</span>
+                  <span className="text-slate-400 ">Net Wealth</span>
                   <span className="font-bold text-emerald-400 text-sm">৳{netWealth.toLocaleString()}</span>
                </div>
             </div>
@@ -190,6 +215,8 @@ export default function ZakatCalculator() {
                 {isZakatEligible ? "● Eligible for Zakat" : "● Below Nisab Threshold"}
                </span>
             </div>
+
+            
 
             <button onClick={handleDownload} className="w-full mt-8 bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-5 rounded-2xl transition-all flex items-center justify-center gap-3 shadow-xl active:scale-95">
               <Download size={18} /> DOWNLOAD SUMMARY
