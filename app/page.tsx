@@ -91,7 +91,7 @@ export default function ZakatCalculator() {
           <div className="w-10 h-10 bg-gradient-to-tr from-emerald-600 to-emerald-400 rounded-xl shadow-lg flex items-center justify-center text-white">
             <Calculator size={20} />
           </div>
-          <h1 className="text-xl font-bold tracking-tight">Pabitra<span className="text-emerald-600">.ly</span></h1>
+          <h1 className="text-xl font-bold tracking-tight">Pobitra-Zakat<span className="text-emerald-600">.ly</span></h1>
         </div>
         
         <div className="hidden md:flex gap-4">
